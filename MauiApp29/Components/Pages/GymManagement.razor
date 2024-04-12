@@ -1,0 +1,123 @@
+﻿@page "/Gym Management"
+
+@using global::GymManagement.Data
+@inject MemberService MemberService
+
+<h1 class="custom-header">Gym Management System</h1>
+
+<p style="color:red">@Error</p>
+
+<div class="container mt-5">
+    <h2>@(objMember.Id == 0 ? "Add New Member" : "Edit Member Details")</h2>
+    <div class="input-group">
+        <input class="form-control" type="text" placeholder="First Name" @bind="objMember.FirstName" />
+        <input class="form-control" type="email" placeholder="Last Name" @bind="objMember.LastName" />
+        <input class="form-control" type="text" placeholder="Email" @bind="objMember.Email" />
+        <input class="form-control" type="text" placeholder="Phone Number"@bind="objMember.PhoneNumber"/>
+    </div>
+    <br>
+    <div class="button-group">
+        <button class="btn btn-success" @onclick="SaveMember">Save</button>
+        @if (objMember.Id != 0)
+        {
+            <button class="btn btn-danger" @onclick="DeleteMember">Delete</button>
+        }
+    </div>
+</div>
+
+@if (members == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-striped mt-4">
+        <thead class="thead-dark">
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var member in members)
+            {
+                <tr>
+                    <td>@member.FirstName</td>
+                    <td>@member.LastName</td>
+                    <td>@member.Email</td>
+                    <td>@member.PhoneNumber</td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="(() => SelectMember(member))">
+                            Edit
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+
+
+@code {
+    string Error = "";
+    List<Member> members = new List<Member>();
+    Member objMember = new Member();
+
+    protected override async Task OnInitializedAsync()
+    {
+        members = await MemberService.GetMembersAsync();
+    }
+
+    void SelectMember(Member member)
+    {
+        objMember = member;
+    }
+
+    void AddNewMember()
+    {
+        objMember = new Member();
+    }
+
+    async Task SaveMember()
+    {
+        Error = "";
+
+        try
+        {
+            if (objMember.Id == 0)
+            {
+                var newMember = await MemberService.CreateMemberAsync(objMember);
+                members.Add(newMember);
+            }
+            else
+            {
+                await MemberService.UpdateMemberAsync(objMember);
+            }
+            AddNewMember(); // Reset form for next entry
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+    }
+
+    async Task DeleteMember()
+    {
+        try
+        {
+            Error = "";
+            await MemberService.DeleteMemberAsync(objMember);
+            members.Remove(objMember);
+            AddNewMember(); // Reset form after delete
+        }
+        catch (Exception ex)
+        {
+            Error = ex.Message;
+        }
+    }
+}
